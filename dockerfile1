@@ -3,7 +3,16 @@ DOCKER ASSOCIATE
 ----------------
 docker pull #imagename
 docker run -p 8080:80 -dt #imagename
+docker run --name #containername -dt -p 8080:80 #imagename
 docker images  #list images
 docker ps #processes of docker 
+docker ps -a #status of containers
 docker stop #containername
+docker start #containername or #containerID
+docker inpect
+#in 8000:80 the 8000 port is the host port so the world can connect to your container and you can specify any port you need.. port 80 is the port inside the container that your service is listening on
+##for example, if you're running a webserver inside a container that listens on port 8080 and you want to access it on port 80 from the host ip, you would use 80:8080. you can specify just a single port alone but it's not very useful as it will pick a random port on the the host to use
+--> attached and detached mode
+docker run --name attached -p 8080:80 #containerimagename   # will stuck on terminal
+docker run --name d -p 8080:80 #containerimagename         # detached and can use terminal without stop the container
 
