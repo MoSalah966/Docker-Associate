@@ -1,3 +1,9 @@
-DOCKER
--------
--------
+DOCKER ASSOCIATE
+----------------
+----------------
+docker pull #imagename
+docker run -p 8080:80 -dt #imagename
+docker images  #list images
+docker ps #processes of docker 
+docker stop #containername
+
