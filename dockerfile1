@@ -15,4 +15,88 @@ docker inpect
 --> attached and detached mode
 docker run --name attached -p 8080:80 #containerimagename   # will stuck on terminal
 docker run --name d -p 8080:80 #containerimagename         # detached and can use terminal without stop the container
-
+docker container stop $(docker container ls -aq)   #to delete all containers
+docker container rm #containername or #containerID
+docker container rm $(docker contianer ls -aq)
+<!-- the docker container exec command runs a new command in a running container -->
+docker container run -d --name docker-exec nginx  #docker-exec is just the name of the container 
+docker container exec -it docker-exec bash  #bash is the command that will run inside the container
+<!-- now bash command is running inside the container and the cli -->
+-----------------------------
+apt install net-tools
+netstat -ntlp
+<!-- the command started using docker exec only runs while the container's primary process PID 1 is running and is not restarted if the container is restarted -->
+<!-- the commands you want to execute differ from one container to another #example > bash not work with busybox image -->
+<!-- for the -it flag, the i is for making you login inside the container in the terminal and the t is to work free inside terminal without locking you inside the container -->
+<!-- -i means interactive and -t means tty -->
+--------------------------------------------------------------------------------------
+<!-- override default container commands -->
+docker container run -d nginx #commandyouwant
+docker ps #to make sure
+<!-- after the command will exit, the container itself will exit -->
+---------------------------------------------------------------
+>>>restart the docker and make containers restart not exit<<<
+systemctl restart docker
+docker container run -d --restart unless-stop nginx  #restart the container if the deamon or docker has restart
+-----------------------------------------------------------------
+df -h #for disks metrics in linux
+docker container exec -it #imagename sh
+/ # dd if=/dev/zero of=bigfile.txt bs=1M count=500  # create a file of 500 Mb called bigfile.txt
+ctrl+c
+docker system df # to know disk metrics of docker containers
+docker system df -v #component level disk usage (which container or which service)
+---------------------------
+>>auto delete container when exit<<
+docker container run -dt --name test busybox ping -c10 google.com
+docker logs test # show pings
+docker container run -dt --rm --name test busybox ping -c10 google.com #auto delete container when exit
+docker logs test # show pings 
+docker pc # container test is no longer running
+--------------------------------------------------------------------------------------------------
+https://docs.google.com/document/d/1LsQyB_9DlKkA2CfFgF0zkRclfO9lZT9ZoIHcANWzvxQ/edit?usp=sharing
+--------------------------------------------------------------------------------------------------
+Section 2: image creation, management, and registry
+---------------------------------------------------
+dockerfile>>docker build>>dockerimage
+>>simple docker file
+/ FROM ubuntu
+/ RUN apt update
+/ RUN apt install nginx
+/ CMD ["nginx", "-g", "deamon off;"]
+---------
+docker build #path  #likethis docker build .
+-----------------------------------------------
+LIST OF COMMANDS FOR DOCKER FILE
+FROM RUN CMD LABEL EXPOSE ENV ADD COPY ENTRYPOINT VOLUME USER ..
+<!-- to go to the docker file -->
+docker container exec -it mynginx bash
+/ apt update
+/ apt install nginx -y
+/ vim var/www/html/index.nginx-debian.html
+/ echo "Welcome to blablabla" > index.nginx-debian.html
+/ nginx -g 'deamon off;'
+ctrl+c
+ctrl+d
+mkdir demo
+cd demo
+------------
+vim dockerfile
+/ FROM ubuntu                             #from a specific image
+/ RUN apt-get update                           #update
+/ RUN apt-get install -y nginx                  #install the webserver image
+/ COPY index.nginx-debian.html /var/www/html     #copy path
+/ CMD nginx -g 'deamon off;'
+/ esc + :wq
+docker build dockerfile 
+----------
+<!-- difference between ADD and COPY 
+both let you copy files from location to image
+COPY takes in a src and destination. it only lets you copy in a local file or directory from your host
+ADD lets you do that too, but it also supports 2 other sources 1- URL instead of localfile/directory 2- extract a tar file from the source directly into the destination (decompress)-->
+<!-- best practice to use wget and curl instead of ADD  to fetch packages from remote URL -->
+----------------------------
+FROM ubuntu
+RUN apt install service
+EXPOSE 9324
+CMD ["service"]
+<!-- means this service will listening on port 9314  -->
