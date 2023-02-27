@@ -225,9 +225,23 @@ docker network inspect host
 yum whatprovides brctl 
 brctl show   #show bridge networks
 yum install bridge-utils
-# i will skip parts of this sections because they are replaced now with K8s in prod
+apt install net-tools -y
 -----------------------------------------------------------------------------------------------
 docker network create --driver bridge mybridge
 docker container run -dt --name mybridge01 --network mybridge ubuntu
 brctl show
 ------------------
+# the host network removes the network isolation between the docker host and the docker containers to use the host's networking directly
+# so if you run a container which binds to port 80 and you use host networking, the container's application will be available on port 80 on the host's IP address
+netstat -ntlp
+----------------------------------------
+# none network completely disable the networking stack on a container
+# this mode won't configure any IP for the container and does not have any access to the external network as well as for other containers
+----------------------------------------------
+docker container run -dt -P --name webserver01 nginx #capital P if you do not want to expose a specific port but it assign a random port to you
+-----------------------------------------------
+docker container run -dt --name cont-one busybox sh
+docker container run -dt --link cont-one:anyaliasname --name cont-two busybox sh  #not recommended now and legacy used 
+# link container one with container two. it is like we can ping from two to one
+https://docs.google.com/document/d/13h48sQF1YWVs9nLCxgO4lrk-Agxu43QIf0s7L64B4c4/edit?usp=sharing
+--------------------------------------------------------------------------------------------------
