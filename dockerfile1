@@ -266,3 +266,7 @@ free -h
 docker container exec -it mymemory1 sh
 / cat /proc/meminfo
 / cat /sys/fs/cgroup/memory/memory.limit_in_bytes
+-------------------------------------------------------
+# to limit the CPU value of a container 
+--cpu=value
+--cpuset-cpus
