@@ -245,3 +245,24 @@ docker container run -dt --link cont-one:anyaliasname --name cont-two busybox sh
 # link container one with container two. it is like we can ping from two to one
 https://docs.google.com/document/d/13h48sQF1YWVs9nLCxgO4lrk-Agxu43QIf0s7L64B4c4/edit?usp=sharing
 --------------------------------------------------------------------------------------------------
+------------------------------------
+SECTION 4: Security
+------------------------------------
+------------------------------------
+# docker uses a technology called namespaces to provide the isolated work space called the container
+# these namespaces provide a layer of isolation. each aspect of a container runs in a spearate namespace and its access is limited to that namespace
+docker container run -dt --name mybusybox busybox sh
+ps -ef  #processes running
+docker container exec -it mybusybox sh
+/ ps -ef
+exit 
+unshare -fp --mount-proc /bin/bash
+# another example 
+hostname
+unshare --uts /bin/bash
+---------------------
+docker container run -dt --name mymemory1 -m 256m ubuntu sh
+free -h 
+docker container exec -it mymemory1 sh
+/ cat /proc/meminfo
+/ cat /sys/fs/cgroup/memory/memory.limit_in_bytes
