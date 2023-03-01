@@ -1,0 +1,272 @@
+DOCKER ASSOCIATE
+----------------
+----------------
+docker pull #imagename
+docker run -p 8080:80 -dt #imagename
+docker run --name #containername -dt -p 8080:80 #imagename
+docker images  #list images
+docker ps #processes of docker 
+docker ps -a #status of containers
+docker stop #containername
+docker start #containername or #containerID
+docker inpect
+#in 8000:80 the 8000 port is the host port so the world can connect to your container and you can specify any port you need.. port 80 is the port inside the container that your service is listening on
+##for example, if you're running a webserver inside a container that listens on port 8080 and you want to access it on port 80 from the host ip, you would use 80:8080. you can specify just a single port alone but it's not very useful as it will pick a random port on the the host to use
+--> attached and detached mode
+docker run --name attached -p 8080:80 #containerimagename   # will stuck on terminal
+docker run --name d -p 8080:80 #containerimagename         # detached and can use terminal without stop the container
+docker container stop $(docker container ls -aq)   #to delete all containers
+docker container rm #containername or #containerID
+docker container rm $(docker contianer ls -aq)
+<!-- the docker container exec command runs a new command in a running container -->
+docker container run -d --name docker-exec nginx  #docker-exec is just the name of the container 
+docker container exec -it docker-exec bash  #bash is the command that will run inside the container
+<!-- now bash command is running inside the container and the cli -->
+-----------------------------
+apt install net-tools
+netstat -ntlp
+<!-- the command started using docker exec only runs while the container's primary process PID 1 is running and is not restarted if the container is restarted -->
+<!-- the commands you want to execute differ from one container to another #example > bash not work with busybox image -->
+<!-- for the -it flag, the i is for making you login inside the container in the terminal and the t is to work free inside terminal without locking you inside the container -->
+<!-- -i means interactive and -t means tty -->
+--------------------------------------------------------------------------------------
+<!-- override default container commands -->
+docker container run -d nginx #commandyouwant
+docker ps #to make sure
+<!-- after the command will exit, the container itself will exit -->
+---------------------------------------------------------------
+>>>restart the docker and make containers restart not exit<<<
+systemctl restart docker
+docker container run -d --restart unless-stop nginx  #restart the container if the deamon or docker has restart
+-----------------------------------------------------------------
+df -h #for disks metrics in linux
+docker container exec -it #imagename sh
+/ # dd if=/dev/zero of=bigfile.txt bs=1M count=500  # create a file of 500 Mb called bigfile.txt
+ctrl+c
+docker system df # to know disk metrics of docker containers
+docker system df -v #component level disk usage (which container or which service)
+---------------------------
+>>auto delete container when exit<<
+docker container run -dt --name test busybox ping -c10 google.com
+docker logs test # show pings
+docker container run -dt --rm --name test busybox ping -c10 google.com #auto delete container when exit
+docker logs test # show pings 
+docker pc # container test is no longer running
+--------------------------------------------------------------------------------------------------
+https://docs.google.com/document/d/1LsQyB_9DlKkA2CfFgF0zkRclfO9lZT9ZoIHcANWzvxQ/edit?usp=sharing
+--------------------------------------------------------------------------------------------------
+---------------------------------------------------
+---------------------------------------------------
+>>>>>>Section 2: image creation, management, and registry<<<<<<<<
+---------------------------------------------------
+---------------------------------------------------
+dockerfile>>docker build>>dockerimage
+>>simple docker file
+/ FROM ubuntu
+/ RUN apt update
+/ RUN apt install nginx
+/ CMD ["nginx", "-g", "deamon off;"]
+---------
+docker build #path  #likethis docker build .
+-----------------------------------------------
+LIST OF COMMANDS FOR DOCKER FILE
+FROM RUN CMD LABEL EXPOSE ENV ADD COPY ENTRYPOINT VOLUME USER ..
+<!-- to go to the docker file -->
+docker container exec -it mynginx bash
+/ apt update
+/ apt install nginx -y
+/ vim var/www/html/index.nginx-debian.html
+/ echo "Welcome to blablabla" > index.nginx-debian.html
+/ nginx -g 'deamon off;'
+ctrl+c
+ctrl+d
+mkdir demo
+cd demo
+------------
+vim dockerfile
+/ FROM ubuntu                             #from a specific image
+/ RUN apt-get update                           #update
+/ RUN apt-get install -y nginx                  #install the webserver image
+/ COPY index.nginx-debian.html /var/www/html     #copy path
+/ CMD nginx -g 'deamon off;'
+/ esc + :wq
+docker build dockerfile 
+----------
+<!-- difference between ADD and COPY 
+both let you copy files from location to image
+COPY takes in a src and destination. it only lets you copy in a local file or directory from your host
+ADD lets you do that too, but it also supports 2 other sources 1- URL instead of localfile/directory 2- extract a tar file from the source directly into the destination (decompress)-->
+<!-- best practice to use wget and curl instead of ADD  to fetch packages from remote URL -->
+----------------------------
+FROM ubuntu
+RUN apt install service
+EXPOSE 9324
+CMD ["service"]
+<!-- means this service will listening on port 9314  -->
+----------------------------------
+# healthcheck istruction docker allows us to tell the platform on how to test that our app is healthy
+HEALTHCHECK --interval=5m --timeout=3s \
+CMD curl -f http://localhost/ | exit 1
+example: 
+docker run -dt --name tmp --health-cmd "curl -f http://localhost" --health-interval=5s --health-retries=1 busybox sh  #means still healthy only for 5s
+# -f in curl for make a one line error not an HTML form
+# https://docs.docker.com/engine/reference/run/#healthcheck
+------------------------
+# the command from ENTRYPOINT cannot be appended like CMD command so i can't tell it ping -c it will give me error
+# CMD: Sets default parameters that can be overridden from the Docker command line interface (CLI) while running a docker container.
+# ENTRYPOINT: Sets default parameters that cannot be overridden while executing Docker containers with CLI parameters.
+# we can override ENTRYPOINT with a flag like --entrypoint [command] like docker run --entrypoint COMMAND containername
+# the WORKDIR sets the working directory for any RUN, CMD, ENTRYPOINT, COPY and ADD instructions that follow it in the dockerfile
+
+FROM busybox
+RUN mkdir /root/demo
+WORKDIR /root/demo
+RUN touch file1.txt 
+CMD ["/bin/sh"]
+------
+FROM busybox
+RUN mkdir -p /root/demo/context1/context2
+WORKDIR /root/demo
+WORKDIR context1
+WORKDIR context2
+RUN touch file01.txt
+CMD ["/bin/sh"]
+-------------
+# the ENV instructions sets the environment variable <key> to the value <value>
+ENV NGINX 1.2
+RUN curl -SL http://example.com/web-$NGINX.tar.xz   # the $NGINX will be replaced with nginx 1.2
+RUN tar -xzvf web-$NGINX.tar.xz                     # the $NGINX will be replaced with nginx 1.2
+# setting environment variable from CLI using -e or --env or --env-file 
+docker run --env VAR1=value1 --env VAR2=value2 ubuntu env | grep VAR
+
+# Using ENV in CLI:
+docker run -dt --name env02 --env USER=ADMINUSER busybox sh
+docker exec -it env02 sh
+echo $USER 
+-----------
+# to tag an image
+docker build -t demo:v1 .  #demo is the name, v1 is the tag
+# retag
+docker tag ubuntu:latest myubuntu:v1   #same image with 2 names and 2 tags
+------------------------------------------
+# it can be useful to commit a container's file changes or settings into a new image. by default the container being commited and its processes will be paused while the image is committed
+docker container commit CONTAINER-ID imagename   #or
+docker container commit busybox busybox-modified   # using commit to make a modified image from the image we already work inside its container
+# to spicify change in a commit 
+docker container commit --change='CMD ["ash"]' busybox  #change this image from sh command to ash command
+# supported instructions for change with commit
+CMD | ENTRYPOINT | ENV | EXPOSE | LABEL | ONBUILD | USER | VOLUME | WORKDIR
+------------------------------------------------------
+# to eliminate the layers of docker file
+FROM ubunto
+RUN dd if=/dev/zero of=/root/file1.txt bs=1M count=100 && rm -f /root/file1.txt
+RUN dd if=/dev/zero of=/root/file2.txt bs=1M count=100 && rm -f /root/file2.txt
+# when you make the layers more less, the performance will be more efficient
+-----------------
+docker image build  # build is the child command. it's the best practice
+# example of child commands --> build inspect history import load ls prune pull push rm save tag
+--------------
+docker image inspect nginx | grep hostname
+docker image inspect nginx --format='{{.Id}}'
+docker image inspect nginx --format='{{json .ContainerConfig}}'  #with json format
+--------------------
+# docker image prune command allows us to clean up unused images (image without tags and image not referenced by any container)
+docker image prune -y
+docker image prune -a -y  #remove images wihtout at least one container associated with them
+-----------------------------------------------
+# flattening docker images
+docker export myubuntu > myubuntudemo.tar
+cat myubuntudemo.tar | docker import - myubuntu:latest
+# now the myubuntu:latest is less in size than the old one
+----------------------------------------------------------------
+# to save an image for transfering it between hosts
+docker save busybox > busybox.tar
+docker load < busybox.tar   # we transfer .tar file then load it to return it to be an image
+-------------------------------
+# docker uses a layer cache to optimize the process of building docker images and make it faster 
+# if you build an image twice, the second build will be more faster because of caching in docker
+# if the cache cannot be used for a particular layer, all subsequent layers will not be loaded from the cache
+
+# Dockerfile
+FROM python:3.7-slim-buster
+COPY . .
+RUN pip install --quiet -r requirements.txt
+ENTRYPOINT ["python", "server.py"]
+
+# requirements.txt
+certifi==2018.8.24
+chardet==3.0.4
+Click==7.0
+cycler==0.10.0
+decorator==4.3.0
+defusedxml==0.5.0
+
+# Build Commands:
+docker build -t without-cache .
+docker build -t with-cache .
+-----------------------------------------
+https://docs.google.com/document/d/1n60n6MymydOjdXboqX1RCP-xklkjiJ-ClS2fjJTwsCY/edit?usp=sharing
+------------------------------------------------
+--------------------------------------------
+SECTION 3 networking
+---------------------------------------------
+----------------------------------------------
+# drivers of docker are bridge, host, overlay, macvlan, none
+# if config >>>> docker0 interface
+docker network ls
+# in the bridge network, the container that runs get the ip range of the bridge network
+docker inspect bridge
+docker container run -dt --name myhost --network host ubuntu
+docker network inspect host
+# a bridge network uses a software bridge which allows containers connected to the same bridge network to communicate, 
+# while providing isolation from containers which are not connected to that bridge netowrk
+# bridge is the defautl network driver for docker
+-------------------------
+yum whatprovides brctl 
+brctl show   #show bridge networks
+yum install bridge-utils
+apt install net-tools -y
+-----------------------------------------------------------------------------------------------
+docker network create --driver bridge mybridge
+docker container run -dt --name mybridge01 --network mybridge ubuntu
+brctl show
+------------------
+# the host network removes the network isolation between the docker host and the docker containers to use the host's networking directly
+# so if you run a container which binds to port 80 and you use host networking, the container's application will be available on port 80 on the host's IP address
+netstat -ntlp
+----------------------------------------
+# none network completely disable the networking stack on a container
+# this mode won't configure any IP for the container and does not have any access to the external network as well as for other containers
+----------------------------------------------
+docker container run -dt -P --name webserver01 nginx #capital P if you do not want to expose a specific port but it assign a random port to you
+-----------------------------------------------
+docker container run -dt --name cont-one busybox sh
+docker container run -dt --link cont-one:anyaliasname --name cont-two busybox sh  #not recommended now and legacy used 
+# link container one with container two. it is like we can ping from two to one
+https://docs.google.com/document/d/13h48sQF1YWVs9nLCxgO4lrk-Agxu43QIf0s7L64B4c4/edit?usp=sharing
+--------------------------------------------------------------------------------------------------
+------------------------------------
+SECTION 4: Security
+------------------------------------
+------------------------------------
+# docker uses a technology called namespaces to provide the isolated work space called the container
+# these namespaces provide a layer of isolation. each aspect of a container runs in a spearate namespace and its access is limited to that namespace
+docker container run -dt --name mybusybox busybox sh
+ps -ef  #processes running
+docker container exec -it mybusybox sh
+/ ps -ef
+exit 
+unshare -fp --mount-proc /bin/bash
+# another example 
+hostname
+unshare --uts /bin/bash
+---------------------
+docker container run -dt --name mymemory1 -m 256m ubuntu sh
+free -h 
+docker container exec -it mymemory1 sh
+/ cat /proc/meminfo
+/ cat /sys/fs/cgroup/memory/memory.limit_in_bytes
+-------------------------------------------------------
+# to limit the CPU value of a container 
+--cpu=value
+--cpuset-cpus
