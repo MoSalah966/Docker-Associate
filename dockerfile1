@@ -270,3 +270,44 @@ docker container exec -it mymemory1 sh
 # to limit the CPU value of a container 
 --cpu=value
 --cpuset-cpus
+docker container run -dt --name container1 --cpus=1.5 busybox sh
+docker container run -dt --name container2 --cpuset-cpus=1,2 busybox sh   #2 cpus because it is a range
+----------------------------------------------------
+# limits and reservations 
+docker container run -dt --name cont-name --memory-reservation 250m busybox sh
+docker container run -dt --name cont-name -m 500m --memory-reservation 250m busybox sh            #hard limit of 500m and soft limit of 250m
+---------------------------------------------------------------------------------------
+# add user to a docker group in linux
+useradd newuser
+vim etc/group
+docker:x:993: newuser      #add the newuser to the docker group
+:wq
+# another way
+usermod -aG docker newuser
+------------------------------------------
+docker run -dt --privileged amazonlinux bash      #privileged container
+docker exec -it containername bash
+/ cd /dev
+/ ls
+/ touch test.txt
+/ yum whatprovides chattr
+/ yum -y install e2fsprogs
+/ chattr +i test.txy
+----------------------------------------------
+----------------------------------------------
+SECTION 5 Storage and Volume 
+----------------------------------------------
+----------------------------------------------
+# change storage driver 
+systemctl stop docker
+cd /etc/docker/
+ls 
+vim deamon.json
+/  {
+/ "storage-driver": "aufs"
+/ }
+
+systemctl start docker
+docker info 
+--------------------
+
