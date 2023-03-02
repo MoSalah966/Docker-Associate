@@ -302,7 +302,7 @@ SECTION 5 Storage and Volume
 systemctl stop docker
 cd /etc/docker/
 ls 
-vim deamon.json
+vim daemon.json
 /  {
 / "storage-driver": "aufs"
 / }
@@ -310,4 +310,93 @@ vim deamon.json
 systemctl start docker
 docker info 
 --------------------
+cd /var/lib/docker
+ls -l
+# you will see here aufs 
+# https://docs.docker.com/storage/storagedriver/select-storage-driver/   >> document link
+-------------------------------------------------------------------------------------------
+docker volume ls
+docker volume --help
+docker volume create myvolume    #create a new volume and can be associated with a container
+docker container run -dt --name ubuntu -v myvolume:/etc
+docker volume inspect myvolume
+cd /var/lib/docker/volume/myvolume/_data/
+ls -l 
+docker container exec -it ubuntu bash
+cd /etc    #the etc directory of the container is in a file system area inside the host
+---------------------------
+# docker file with volume specified
+FROM busybox
+RUN mkdir /myvolume 
+RUN echo "hello world" > /myvolume/hello.txt
+VOLUME /myvolume
 
+docker build -t mydemo .
+docker container run -dt --name mydemo mydemo sh
+# a given volume can be mounted into multiple containers simultaneously 
+------------------------
+# when you use a bind mount, a file or directory on the host machine is mounted into a container 
+docker contianer run -dt --name nginx01 -v /root/index/:/usr/share/nginx/html nginx
+docker inspect nginx01 curl containerIP
+docker container exec -it nginx01 bash
+cd /usr/share/nginx/html && ls
+-------
+# specify a mount type
+docker container run -dt --name nginx01 --mount type=bind,source=/root/index,target=/usr/share/nginx/html nginx
+docker container run -dt --name nginx02 --mount type=bind,source=/root/index,target=/usr/share/nginx/html,readonly nginx    #we make the container insider content readonly 
+----------------------------------------
+#  removing existing contanier after exited
+docker container run --rm -dt --name container01 busybox ping -c10 google.com   #remove after finish its process
+# remove a volume 
+docker volume rm container-ID
+docker container run --rm -dt --name container02 -v /testvolume busybox ping -c10 google.com   #remove after finish its process and also delete volume
+-----------------
+# the device mapper is a framework provided by the linux kernal for mapping physical block devices onto higher-level virtual block devices
+# device mapper works by passing data from a virtual block device, which is provided by the device mapper itself, to another block device
+# two modes of devicemapper  >> loop-lvm mode    >> direct-lvm mode
+vim /etc/docker/daemon.json
+{
+    "storage-driver": "devicemapper"
+}
+
+docker info | grep -i storage 
+# >>storage driver: overlay2 
+--------------------------------------
+docker container run -d --name mycustom --log-driver none busybox ping google.com
+docker logs mycustom   #>>gives error because it is none/does not support reading
+# docker logs command works only with json-file and journald logging driver options
+-----------
+# creating volumes in kubernetes
+# after minikube installation 
+minikube status
+vim pod-volume.yaml
+
+apiVersion: v1
+kind: Pod 
+metadata:
+    name: demonpod-volume
+spec:
+    containers:
+    - image: nginx
+      name: test-container
+      volumeMounts:
+      - mountPath: /data
+        name: first-volume
+    volumes:
+    - name: first-volume
+      hostPath: 
+        path: /mydata
+        type: directory
+
+mkdir /mydata
+kubectl apply -f pod-volume.yaml  #create pod
+get pods
+kubectl exec -it podname bash
+cd /data
+touch salahlabs.txt
+echo "hi" > salahlabs.txt
+ls 
+df -h 
+exit
+cd /mydata
+ls   > salahlabs.txt
